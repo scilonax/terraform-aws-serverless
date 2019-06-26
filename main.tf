@@ -171,21 +171,24 @@ resource "aws_lambda_function" "lambdas" {
   s3_bucket = "${aws_s3_bucket.lambdas.id}"
   s3_key    = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
 
-  depends_on = ["aws_iam_role_policy_attachment.lambda_logs", "aws_cloudwatch_log_group.lambdas"]#, "aws_s3_bucket_object.lambdas"]
+  depends_on = ["aws_iam_role_policy_attachment.lambda_logs", "aws_cloudwatch_log_group.lambdas", "aws_s3_bucket_object.lambdas"]
 }
 
-# resource "aws_s3_bucket_object" "lambdas" {
-#   count = "${length(var.lambdas)}"
+data "archive_file" "lambdas" {
+  count = "${length(var.lambdas)}"
+  type        = "zip"
+  source_file = "${element(var.lambda_files, count.index)}"
+  output_path = "${path.module}/${element(var.lambdas, count.index)}.zip"
+}
 
-#   bucket = "${aws_s3_bucket.lambdas.id}"
-#   key    = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
-#   source = "${element(var.lambdas, count.index)}.zip"
+resource "aws_s3_bucket_object" "lambdas" {
+  count = "${length(var.lambdas)}"
 
-#   # The filemd5() function is available in Terraform 0.11.12 and later
-#   # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
-#   # etag = "${md5(file("path/to/file"))}"
-#   etag = "${md5("${element(var.lambdas, count.index)}.zip")}"
-# }
+  bucket = "${aws_s3_bucket.lambdas.id}"
+  key    = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
+  source = "${data.archive_file.lambdas.*.output_path[count.index]}"
+  etag = "${md5(file(data.archive_file.lambdas.*.output_path[count.index]))}"
+}
 
 resource "aws_lambda_permission" "lambdas" {
   count = "${length(var.lambdas)}"

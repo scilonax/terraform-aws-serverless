@@ -35,3 +35,7 @@ variable "lambda_runtimes" {
 variable "lambda_versions" {
   type = "list"
 }
+
+variable "lambda_files" {
+  type = "list"
+}

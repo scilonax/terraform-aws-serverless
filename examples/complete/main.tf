@@ -1,5 +1,6 @@
 provider "aws" {
   region = "us-east-1"
+  profile = "scilonax"
 
   skip_credentials_validation = true
   skip_requesting_account_id  = true
@@ -32,10 +33,11 @@ module "serverless" {
       type = "S"
     }]
   ]
-  lambdas = ["post-ride"]
+  lambdas         = ["post-ride"]
   lambda_handlers = ["exports.handler"]
   lambda_runtimes = ["nodejs8.10"]
   lambda_versions = ["0.0.0"]
+  lambda_files    = ["exports.js"]
 }
 
 data "template_file" "api_swagger" {
