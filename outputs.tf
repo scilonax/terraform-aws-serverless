@@ -18,6 +18,6 @@ output "lambda_invoke_arns" {
   value = "${aws_lambda_function.lambdas.*.invoke_arn}"
 }
 
-output "aws_api_gateway_prod_invoke_url" {
-  value = "${aws_api_gateway_deployment.prod.invoke_url}"
+output "current_stages" {
+  value = "${zipmap(aws_api_gateway_base_path_mapping.versions.*.base_path, aws_api_gateway_base_path_mapping.versions.*.stage_name)}"
 }

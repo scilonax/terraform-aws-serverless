@@ -202,25 +202,14 @@ resource "aws_s3_bucket_object" "lambdas" {
   etag = "${md5(file(data.archive_file.lambdas.*.output_path[count.index]))}"  
 }
 
-resource "aws_lambda_permission" "lambda_versions" {
-  count = "${length(var.lambdas)}"
-
-  statement_id  = "AllowExecutionFromAPIGateway"
-  action        = "lambda:InvokeFunction"
-  function_name = "${element(var.lambdas, count.index)}"
-  principal     = "apigateway.amazonaws.com"
-  qualifier     = "${aws_lambda_function.lambdas.*.version[count.index]}"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
-}
-
 resource "aws_lambda_permission" "lambdas" {
-  count = "${length(var.lambdas)}"
+  count = "${length(var.lambda_apis)}"
 
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = "${element(var.lambdas, count.index)}"
+  function_name = "${var.lambda_apis[count.index]}"
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.apis.*.execution_arn[var.api_lambdas[count.index]]}/*/*/*"
 }
 
 resource "aws_cloudwatch_log_group" "lambdas" {
@@ -256,16 +245,49 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = "${aws_iam_policy.lambda_logging.arn}"
 }
 
-resource "aws_api_gateway_rest_api" "api" {
-  name = "${var.domain}"
-  body = "${var.api_swagger}"
+resource "aws_api_gateway_rest_api" "apis" {
+  count = "${length(var.api_versions)}"
+  name = "${var.domain}-${var.api_versions[count.index]}"
+  body = "${var.api_swaggers[count.index]}"
 }
 
-resource "aws_api_gateway_deployment" "prod" {
-  rest_api_id = "${aws_api_gateway_rest_api.api.id}"
-  stage_name  = "prod"
+resource "aws_api_gateway_deployment" "green_versions" {
+  count = "${length(var.api_versions)}"
+  rest_api_id = "${aws_api_gateway_rest_api.apis.*.id[count.index]}"
+  stage_name  = "green"
+}
 
-  variables {
-    api_swagger_hash = "${base64sha256(file("swagger.yaml"))}"
+resource "aws_api_gateway_deployment" "blue_versions" {
+  count = "${length(var.api_versions)}"
+  rest_api_id = "${aws_api_gateway_rest_api.apis.*.id[count.index]}"
+  stage_name  = "blue"
+}
+
+resource "aws_api_gateway_domain_name" "api" {
+  domain_name              = "api.${var.domain}"
+  regional_certificate_arn = "${var.acm_certificate_arn}"
+
+  endpoint_configuration {
+    types = ["REGIONAL"]
   }
+}
+
+resource "aws_route53_record" "api" {
+  name    = "${aws_api_gateway_domain_name.api.domain_name}"
+  type    = "A"
+  zone_id = "${var.route53_zone_id}"
+
+  alias {
+    evaluate_target_health = true
+    name                   = "${aws_api_gateway_domain_name.api.regional_domain_name}"
+    zone_id                = "${aws_api_gateway_domain_name.api.regional_zone_id}"
+  }
+}
+
+resource "aws_api_gateway_base_path_mapping" "versions" {
+  count       = "${length(var.api_versions)}"
+  api_id      = "${aws_api_gateway_rest_api.apis.*.id[count.index]}"
+  stage_name  = "${var.api_stages[count.index]}"
+  domain_name = "${aws_api_gateway_domain_name.api.domain_name}"
+  base_path   = "${var.api_versions[count.index]}"
 }

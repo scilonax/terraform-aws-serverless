@@ -5,6 +5,6 @@ window._config = {
         region: 'us-east-1' // e.g. us-east-2
     },
     api: {
-        invokeUrl: '${aws_api_gateway_prod_invoke_url}'
+        invokeUrl: 'https://api.guiadev.scilonax.com/v1'
     }
 };
