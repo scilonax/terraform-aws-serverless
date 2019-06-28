@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "aws_s3_bucket" "website" {
   bucket = "${var.domain}"
   acl    = "public-read"
@@ -28,7 +30,7 @@ EOF
 
 resource "aws_cloudfront_distribution" "website_cdn" {
   origin {
-    domain_name = "${var.domain}.s3-website-us-east-1.amazonaws.com"
+    domain_name = "${var.domain}.s3-website-${data.aws_region.current.name}.amazonaws.com"
     origin_id   = "${var.cdn_origin_id}"
 
     custom_origin_config {
@@ -95,6 +97,16 @@ resource "aws_route53_record" "website_alias" {
     name                   = "${aws_cloudfront_distribution.website_cdn.domain_name}"
     zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
+  }
+}
+
+resource "null_resource" "deploy" {
+  depends_on = ["aws_s3_bucket.website", "aws_cloudfront_distribution.website_cdn"]
+  provisioner "local-exec" {
+    command = <<EOS
+aws --profile ${var.aws_profile} s3 cp ${var.website_folder} s3://${aws_s3_bucket.website.id} --recursive --acl public-read
+aws --profile ${var.aws_profile} cloudfront create-invalidation --distribution-id ${aws_cloudfront_distribution.website_cdn.id} --paths '/*'
+EOS
   }
 }
 
@@ -167,18 +179,18 @@ resource "aws_lambda_function" "lambdas" {
   role          = "${aws_iam_role.lambda.arn}"
   handler       = "${element(var.lambda_handlers, count.index)}"
   runtime       = "${element(var.lambda_runtimes, count.index)}"
+  publish       = true
+  s3_bucket     = "${aws_s3_bucket.lambdas.id}"
+  s3_key        = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
 
-  s3_bucket = "${aws_s3_bucket.lambdas.id}"
-  s3_key    = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
-
-  depends_on = ["aws_iam_role_policy_attachment.lambda_logs", "aws_cloudwatch_log_group.lambdas", "aws_s3_bucket_object.lambdas"]
+  depends_on    = ["aws_iam_role_policy_attachment.lambda_logs", "aws_cloudwatch_log_group.lambdas", "aws_s3_bucket_object.lambdas"]
 }
 
 data "archive_file" "lambdas" {
   count = "${length(var.lambdas)}"
   type        = "zip"
   source_file = "${element(var.lambda_files, count.index)}"
-  output_path = "${path.module}/${element(var.lambdas, count.index)}.zip"
+  output_path = "${element(var.lambdas, count.index)}.zip"
 }
 
 resource "aws_s3_bucket_object" "lambdas" {
@@ -187,7 +199,18 @@ resource "aws_s3_bucket_object" "lambdas" {
   bucket = "${aws_s3_bucket.lambdas.id}"
   key    = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
   source = "${data.archive_file.lambdas.*.output_path[count.index]}"
-  etag = "${md5(file(data.archive_file.lambdas.*.output_path[count.index]))}"
+  etag = "${md5(file(data.archive_file.lambdas.*.output_path[count.index]))}"  
+}
+
+resource "aws_lambda_permission" "lambda_versions" {
+  count = "${length(var.lambdas)}"
+
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = "${element(var.lambdas, count.index)}"
+  principal     = "apigateway.amazonaws.com"
+  qualifier     = "${aws_lambda_function.lambdas.*.version[count.index]}"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
 }
 
 resource "aws_lambda_permission" "lambdas" {
@@ -197,8 +220,7 @@ resource "aws_lambda_permission" "lambdas" {
   action        = "lambda:InvokeFunction"
   function_name = "${element(var.lambdas, count.index)}"
   principal     = "apigateway.amazonaws.com"
-
-  source_arn = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.api.execution_arn}/*/*/*"
 }
 
 resource "aws_cloudwatch_log_group" "lambdas" {

@@ -30,6 +30,7 @@ Apache 2 Licensed. See LICENSE for full details.
 2 - Multiple APIs
 3 - Blue/Green using API Deployment
 4 - Canary release using API?
+5 - Create nested modules for cloud front
 5 - null_resources to deploy s3 and invlidate cloudfront: 
 
 `aws --profile scilonax s3 cp . s3://guiadev.scilonax.com --recursive --acl public-read`
