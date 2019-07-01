@@ -23,7 +23,10 @@ module "serverless" {
   website_folder = "website"
   route53_zone_id = "${data.aws_route53_zone.scilonax_com.zone_id}"
   api_swaggers = ["${data.template_file.api_swagger.rendered}"]
-  api_stages = ["${var.api_stages}"]
+  api_versions = ["v1"]
+  api_stages = ["green"]
+  api_green_deploy_numbers = [1]
+  api_blue_deploy_numbers = [1]
   domain = "guiadev.scilonax.com"
   cdn_origin_id = "guiadev_scilonax_com"
   acm_certificate_arn = "${aws_acm_certificate.cert.arn}"

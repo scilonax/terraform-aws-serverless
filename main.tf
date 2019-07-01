@@ -186,6 +186,15 @@ resource "aws_lambda_function" "lambdas" {
   depends_on    = ["aws_iam_role_policy_attachment.lambda_logs", "aws_cloudwatch_log_group.lambdas", "aws_s3_bucket_object.lambdas"]
 }
 
+resource "aws_lambda_alias" "lambdas" {
+  count = "${length(var.lambdas)}"
+
+  name             = "${element(var.lambdas, count.index)}"
+  description      = "prod"
+  function_name    = "${aws_lambda_function.lambdas.*.arn[count.index]}"
+  function_version = "$$LATEST"
+}
+
 data "archive_file" "lambdas" {
   count = "${length(var.lambdas)}"
   type        = "zip"
@@ -255,12 +264,18 @@ resource "aws_api_gateway_deployment" "green_versions" {
   count = "${length(var.api_versions)}"
   rest_api_id = "${aws_api_gateway_rest_api.apis.*.id[count.index]}"
   stage_name  = "green"
+  variables {
+    deploy_number = "${var.api_green_deploy_numbers[count.index]}"
+  }
 }
 
 resource "aws_api_gateway_deployment" "blue_versions" {
   count = "${length(var.api_versions)}"
   rest_api_id = "${aws_api_gateway_rest_api.apis.*.id[count.index]}"
   stage_name  = "blue"
+  variables {
+    deploy_number = "${var.api_blue_deploy_numbers[count.index]}"
+  }
 }
 
 resource "aws_api_gateway_domain_name" "api" {
@@ -290,4 +305,5 @@ resource "aws_api_gateway_base_path_mapping" "versions" {
   stage_name  = "${var.api_stages[count.index]}"
   domain_name = "${aws_api_gateway_domain_name.api.domain_name}"
   base_path   = "${var.api_versions[count.index]}"
+  depends_on  = ["aws_api_gateway_deployment.blue_versions","aws_api_gateway_deployment.green_versions"]
 }

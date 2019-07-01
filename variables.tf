@@ -8,11 +8,19 @@ variable "api_swaggers" {
 }
 variable "api_versions" {
   type = "list"
-  default = ["v1"]
+  default = []
 }
 variable "api_stages" {
   type = "list"
-  default = ["blue"]
+  default = []
+}
+variable "api_green_deploy_numbers" {
+  type = "list"
+  default = []
+}
+variable "api_blue_deploy_numbers" {
+  type = "list"
+  default = []
 }
 variable "website_folder" {}
 variable "aws_profile" {}

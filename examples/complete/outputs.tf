@@ -9,7 +9,3 @@ output "cognito_user_pool_client_id" {
 output "cdn_id" {
   value = "${module.serverless.cdn_id}"
 }
-
-output "current_stages" {
-  value = "${module.serverless.current_stages}"
-}
