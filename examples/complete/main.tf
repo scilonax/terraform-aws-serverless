@@ -29,20 +29,19 @@ module "serverless" {
 
   apis                      = [
     {
-      swagger = data.template_file.api_swagger.rendered
-      version = "v1"
-      stage   = "green"
+      swagger            = data.template_file.api_swagger.rendered
+      version            = "v1"
+      stage              = "green"
       green_deploy_count = 1
-      blue_deploy_count = 1
+      blue_deploy_count  = 1
     }
-
   ]
 
   dynamodb_tables           = [
     {
-      name = "Rides"
-      hash_key =  "RideId"
-      range_key = ""
+      name       = "Rides"
+      hash_key   =  "RideId"
+      range_key  = ""
       attributes = [
         {
           name = "RideId"
@@ -54,18 +53,18 @@ module "serverless" {
 
   lambdas         = [
     {
-      name = "post-ride"
+      name    = "post-ride"
       handler = "exports.handler"
       runtime = "nodejs8.10"
       version = "0.0.0"
-      file = "exports.js"
+      file    = "exports.js"
     }
   ]
 
   api_lambda_permissions = [
     {
       api_index = 0
-      lambda = "post-ride"
+      lambda    = "post-ride"
     }
   ]
 }
