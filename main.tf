@@ -124,15 +124,19 @@ resource "aws_cognito_user_pool_client" "website_auth_client" {
   user_pool_id = aws_cognito_user_pool.website_auth.id
 }
 
+//noinspection MissingProperty
 resource "aws_dynamodb_table" "tables" {
   count        = length(var.dynamodb_tables)
-  name         = var.dynamodb_tables[count.index]
+  name         = var.dynamodb_tables[count.index].name
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = element(var.dynamodb_table_hash_keys, count.index)
-  range_key    = element(var.dynamodb_table_range_keys, count.index)
+  hash_key     = var.dynamodb_tables[count.index].hash_key
+  range_key    = var.dynamodb_tables[count.index].range_key
 
   dynamic "attribute" {
-    for_each = [var.dynamodb_table_attributes[count.index]]
+    for_each = [for a in var.dynamodb_tables[count.index].attributes: {
+      name = a.name
+      type = a.type
+    }]
     content {
       name = attribute.value.name
       type = attribute.value.type
@@ -185,13 +189,13 @@ resource "aws_s3_bucket" "lambdas" {
 resource "aws_lambda_function" "lambdas" {
   count = length(var.lambdas)
 
-  function_name = element(var.lambdas, count.index)
+  function_name = var.lambdas[count.index].name
   role = aws_iam_role.lambda.arn
-  handler = element(var.lambda_handlers, count.index)
-  runtime = element(var.lambda_runtimes, count.index)
+  handler = var.lambdas[count.index].handler
+  runtime = var.lambdas[count.index].runtime
   publish = true
   s3_bucket = aws_s3_bucket.lambdas.id
-  s3_key = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
+  s3_key = "${var.lambdas[count.index].name}/${var.lambdas[count.index].version}/${var.lambdas[count.index].name}.zip"
 
   depends_on = [
     aws_iam_role_policy_attachment.lambda_logs,
@@ -203,7 +207,7 @@ resource "aws_lambda_function" "lambdas" {
 resource "aws_lambda_alias" "lambdas" {
   count = length(var.lambdas)
 
-  name = element(var.lambdas, count.index)
+  name = var.lambdas[count.index].name
   description = "prod"
   function_name = aws_lambda_function.lambdas[count.index].arn
   function_version = "$LATEST"
@@ -212,32 +216,32 @@ resource "aws_lambda_alias" "lambdas" {
 data "archive_file" "lambdas" {
   count = length(var.lambdas)
   type = "zip"
-  source_file = element(var.lambda_files, count.index)
-  output_path = "${element(var.lambdas, count.index)}.zip"
+  source_file = var.lambdas[count.index].file
+  output_path = "${var.lambdas[count.index].name}.zip"
 }
 
 resource "aws_s3_bucket_object" "lambdas" {
   count = length(var.lambdas)
 
   bucket = aws_s3_bucket.lambdas.id
-  key = "${element(var.lambdas, count.index)}/${element(var.lambda_versions, count.index)}/${element(var.lambdas, count.index)}.zip"
+  key = "${var.lambdas[count.index].name}/${var.lambdas[count.index].version}/${var.lambdas[count.index].name}.zip"
   source = data.archive_file.lambdas[count.index].output_path
   etag = filemd5(data.archive_file.lambdas[count.index].output_path)
 }
 
 resource "aws_lambda_permission" "lambdas" {
-  count = length(var.lambda_apis)
+  count = length(var.api_lambda_permissions)
 
   statement_id = "AllowExecutionFromAPIGateway"
   action = "lambda:InvokeFunction"
-  function_name = var.lambda_apis[count.index]
+  function_name = var.api_lambda_permissions[count.index].lambda
   principal = "apigateway.amazonaws.com"
-  source_arn = "${aws_api_gateway_rest_api.apis[var.api_lambdas[count.index]].execution_arn}/*/*/*"
+  source_arn = "${aws_api_gateway_rest_api.apis[var.api_lambda_permissions[count.index].api_index].execution_arn}/*/*/*"
 }
 
 resource "aws_cloudwatch_log_group" "lambdas" {
   count = length(var.lambdas)
-  name = "/aws/lambda/${element(var.lambdas, count.index)}"
+  name = "/aws/lambda/${var.lambdas[count.index].name}"
   retention_in_days = 1
 }
 
@@ -269,26 +273,26 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 }
 
 resource "aws_api_gateway_rest_api" "apis" {
-  count = length(var.api_versions)
-  name  = "${var.domain}-${var.api_versions[count.index]}"
-  body  = var.api_swaggers[count.index]
+  count = length(var.apis)
+  name  = "${var.domain}-${var.apis[count.index].version}"
+  body  = var.apis[count.index].swagger
 }
 
 resource "aws_api_gateway_deployment" "green_versions" {
-  count       = length(var.api_versions)
+  count       = length(var.apis)
   rest_api_id = aws_api_gateway_rest_api.apis[count.index].id
   stage_name  = "green"
   variables = {
-    deploy_number = var.api_green_deploy_numbers[count.index]
+    deploy_number = var.apis[count.index].green_deploy_count
   }
 }
 
 resource "aws_api_gateway_deployment" "blue_versions" {
-  count       = length(var.api_versions)
+  count       = length(var.apis)
   rest_api_id = aws_api_gateway_rest_api.apis[count.index].id
   stage_name  = "blue"
   variables = {
-    deploy_number = var.api_blue_deploy_numbers[count.index]
+    deploy_number = var.apis[count.index].blue_deploy_count
   }
 }
 
@@ -314,11 +318,11 @@ resource "aws_route53_record" "api" {
 }
 
 resource "aws_api_gateway_base_path_mapping" "versions" {
-  count       = length(var.api_versions)
+  count       = length(var.apis)
   api_id      = aws_api_gateway_rest_api.apis[count.index].id
-  stage_name  = var.api_stages[count.index]
+  stage_name  = var.apis[count.index].stage
   domain_name = aws_api_gateway_domain_name.api.domain_name
-  base_path   = var.api_versions[count.index]
+  base_path   = var.apis[count.index].version
   depends_on = [
     aws_api_gateway_deployment.blue_versions,
     aws_api_gateway_deployment.green_versions,

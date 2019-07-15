@@ -10,28 +10,14 @@ variable "acm_certificate_arn" {
 variable "route53_zone_id" {
 }
 
-variable "api_swaggers" {
-  type    = list(string)
-  default = []
-}
-
-variable "api_versions" {
-  type    = list(string)
-  default = []
-}
-
-variable "api_stages" {
-  type    = list(string)
-  default = []
-}
-
-variable "api_green_deploy_numbers" {
-  type    = list(string)
-  default = []
-}
-
-variable "api_blue_deploy_numbers" {
-  type    = list(string)
+variable "apis" {
+  type    = list(object({
+    swagger = string
+    version = string
+    stage = string
+    green_deploy_count = number
+    blue_deploy_count = number
+  }))
   default = []
 }
 
@@ -42,60 +28,33 @@ variable "aws_profile" {
 }
 
 variable "dynamodb_tables" {
-  type    = list(string)
-  default = []
-}
-
-variable "dynamodb_table_hash_keys" {
-  type    = list(string)
-  default = []
-}
-
-variable "dynamodb_table_range_keys" {
-  type    = list(string)
-  default = []
-}
-
-variable "dynamodb_table_attributes" {
   type    = list(object({
     name = string
-    type = string
+    hash_key = string
+    range_key = string
+    attributes = list(object({
+      name = string
+      type = string
+    }))
   }))
   default = []
 }
 
 variable "lambdas" {
-  type    = list(string)
+  type    = list(object({
+    name = string
+    handler = string
+    runtime = string
+    version = string
+    file = string
+  }))
   default = []
 }
 
-variable "lambda_handlers" {
-  type    = list(string)
+variable "api_lambda_permissions" {
+  type    = list(object({
+    lambda = string
+    api_index = number
+  }))
   default = []
 }
-
-variable "lambda_runtimes" {
-  type    = list(string)
-  default = []
-}
-
-variable "lambda_versions" {
-  type    = list(string)
-  default = []
-}
-
-variable "lambda_files" {
-  type    = list(string)
-  default = []
-}
-
-variable "lambda_apis" {
-  type    = list(string)
-  default = []
-}
-
-variable "api_lambdas" {
-  type    = list(string)
-  default = []
-}
-
