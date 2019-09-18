@@ -1,3 +1,0 @@
-aws --profile scilonax s3 cp . s3://guiadev.scilonax.com --recursive --acl public-read
-aws --profile scilonax cloudfront create-invalidation --distribution-id E3S9KYBCW1M45H --paths '/*'
-
