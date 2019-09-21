@@ -20,6 +20,7 @@ data "aws_iam_policy_document" "dynamodb_lambda_policy" {
 }
 
 resource "aws_iam_role_policy" "lambda" {
+  count = length(var.dynamodb_tables_arn) == 0 ? 0 : 1
   name = var.domain
   role = data.aws_iam_role.lambda.id
   policy = data.aws_iam_policy_document.dynamodb_lambda_policy.json
