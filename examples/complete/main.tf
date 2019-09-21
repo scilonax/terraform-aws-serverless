@@ -1,72 +1,71 @@
 provider "aws" {
   region  = "us-east-1"
-  profile = "scilonax"
+  profile = "scilonax_sandbox"
 }
 
-data "aws_route53_zone" "scilonax_com" {
-  name = "scilonax.com"
+data "aws_route53_zone" "sandbox" {
+  name = "sandbox.scilonax.com"
 }
 
 resource "aws_acm_certificate" "cert" {
-  domain_name               = "*.scilonax.com"
-  validation_method         = "DNS"
-  subject_alternative_names = ["scilonax.com", "*.guiadev.scilonax.com"]
+  domain_name               = "aws-serverless.sandbox.scilonax.com"
+  subject_alternative_names = ["*.aws-serverless.sandbox.scilonax.com"]
+  validation_method = "EMAIL"
+}
 
-  lifecycle {
-    create_before_destroy = true
+resource "aws_acm_certificate_validation" "cert" {
+  certificate_arn = "${aws_acm_certificate.cert.arn}"
+}
+
+module "serverless_api" {
+  source = "../../modules/api"
+  acm_certificate_arn = aws_acm_certificate.cert.arn
+  blue_deploy_count = 1
+  green_deploy_count = 0
+  current_stage = "blue"
+  domain = "api.aws-serverless.sandbox.scilonax.com"
+  name = "api.aws-serverless.sandbox.scilonax.com"
+  path_version = "v1"
+  swagger = data.template_file.api_swagger.rendered
+  zone_id = data.aws_route53_zone.sandbox.id
+}
+
+module "serverless_lambda" {
+  source = "../../modules/lambda"
+  api_execution_arn = module.serverless_api.execution_arn
+  bucket = module.serverless.lambda_bucket_id
+  function_name = "post-ride"
+  function_version = "0.0.0"
+  handler = "exports.handler"
+  layers_arn = []
+  retention_in_days = 1
+  runtime = "nodejs8.10"
+  source_file = "exports.js"
+}
+
+resource "aws_dynamodb_table" "rides" {
+  name         = "Rides"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "RideId"
+  range_key    = ""
+
+  attribute {
+    name = "RideId"
+    type = "S"
   }
 }
 
 module "serverless" {
   source                    = "../../"
 
-  aws_profile               = "scilonax"
+  aws_profile               = "scilonax_sandbox"
   website_folder            = "website"
-  route53_zone_id           = data.aws_route53_zone.scilonax_com.zone_id
-  domain                    = "guiadev.scilonax.com"
-  cdn_origin_id             = "guiadev_scilonax_com"
+  route53_zone_id           = data.aws_route53_zone.sandbox.zone_id
+  domain                    = "aws-serverless.sandbox.scilonax.com"
+  cdn_origin_id             = "aws_serverless_sandbox_scilonax_com"
   acm_certificate_arn       = aws_acm_certificate.cert.arn
-
-  apis                      = [
-    {
-      swagger            = data.template_file.api_swagger.rendered
-      version            = "v1"
-      stage              = "green"
-      green_deploy_count = 1
-      blue_deploy_count  = 1
-    }
-  ]
-
-  dynamodb_tables           = [
-    {
-      name       = "Rides"
-      hash_key   =  "RideId"
-      range_key  = ""
-      attributes = [
-        {
-          name = "RideId"
-          type = "S"
-        }
-      ]
-    }
-  ]
-
-  lambdas         = [
-    {
-      name    = "post-ride"
-      handler = "exports.handler"
-      runtime = "nodejs8.10"
-      version = "0.0.0"
-      file    = "exports.js"
-    }
-  ]
-
-  api_lambda_permissions = [
-    {
-      api_index = 0
-      lambda    = "post-ride"
-    }
-  ]
+  lambda_role_name          = "iam_for_lambda"
+  dynamodb_tables_arn       = [aws_dynamodb_table.rides.arn]
 }
 
 data "template_file" "api_swagger" {
@@ -74,7 +73,7 @@ data "template_file" "api_swagger" {
 
   vars = {
     user_pool_arn        = module.serverless.cognito_user_pool_arn
-    post_ride_lambda_arn = module.serverless.lambda_invoke_arns[0]
+    post_ride_lambda_arn = module.serverless_lambda.invoke_arn
   }
 }
 
@@ -91,4 +90,3 @@ resource "local_file" "config_js" {
   content  = data.template_file.config_js.rendered
   filename = "${path.module}/website/js/config.js"
 }
-
