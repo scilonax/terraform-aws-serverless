@@ -38,6 +38,7 @@ resource "aws_api_gateway_deployment" "blue_versions" {
   variables = {
     deploy_number = var.blue_deploy_count
   }
+  depends_on = [aws_api_gateway_deployment.green_versions]
 }
 
 resource "aws_api_gateway_base_path_mapping" "versions" {

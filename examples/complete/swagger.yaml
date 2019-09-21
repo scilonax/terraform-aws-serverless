@@ -32,7 +32,7 @@ paths:
       security:
         - cognito-authorizer: []              
       x-amazon-apigateway-integration:
-        uri: ${post_ride_lambda_arn}
+        uri: ${post_ride_invoke_arn}
         passthroughBehavior: "when_no_match"
         httpMethod: "POST"
         type: "aws_proxy"

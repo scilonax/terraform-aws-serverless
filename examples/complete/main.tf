@@ -73,7 +73,7 @@ data "template_file" "api_swagger" {
 
   vars = {
     user_pool_arn        = module.serverless.cognito_user_pool_arn
-    post_ride_lambda_arn = module.serverless_lambda.invoke_arn
+    post_ride_invoke_arn = module.serverless_lambda.invoke_arn
   }
 }
 

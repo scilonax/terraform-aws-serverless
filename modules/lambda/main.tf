@@ -39,6 +39,7 @@ resource "aws_lambda_permission" "lambda" {
   statement_id  = "AllowAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
+  qualifier = "prod"
   principal     = "apigateway.amazonaws.com"
 
   # The /*/*/* part allows invocation from any stage, method and resource path
@@ -47,8 +48,7 @@ resource "aws_lambda_permission" "lambda" {
 }
 
 resource "aws_lambda_alias" "lambda" {
-  name = var.function_name
-  description = "prod"
+  name = "prod"
   function_name = aws_lambda_function.lambda.arn
   function_version = "$LATEST"
 }
