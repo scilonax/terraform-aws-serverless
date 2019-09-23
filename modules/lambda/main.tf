@@ -1,14 +1,14 @@
 data "archive_file" "lambda" {
-  type = "zip"
+  type        = "zip"
   source_file = var.source_file
   output_path = "${path.module}/${var.function_name}.zip"
 }
 
 resource "aws_s3_bucket_object" "lambda" {
   bucket = var.bucket
-  key = "lambdas/${var.function_name}/${var.function_version}/${var.function_name}.zip"
+  key    = "lambdas/${var.function_name}/${var.function_version}/${var.function_name}.zip"
   source = data.archive_file.lambda.output_path
-  etag = filemd5(data.archive_file.lambda.output_path)
+  etag   = filemd5(data.archive_file.lambda.output_path)
 }
 
 resource "aws_cloudwatch_log_group" "lambda" {
@@ -21,25 +21,25 @@ data "aws_iam_role" "iam_for_lambda" {
 }
 
 resource "aws_lambda_function" "lambda" {
-  function_name = var.function_name
-  role          = data.aws_iam_role.iam_for_lambda.arn
-  handler       = var.handler
-  s3_bucket     = var.bucket
-  s3_key        = aws_s3_bucket_object.lambda.key
+  function_name     = var.function_name
+  role              = data.aws_iam_role.iam_for_lambda.arn
+  handler           = var.handler
+  s3_bucket         = var.bucket
+  s3_key            = aws_s3_bucket_object.lambda.key
   s3_object_version = aws_s3_bucket_object.lambda.version_id
-  layers = var.layers_arn
-  runtime = var.runtime
+  layers            = var.layers_arn
+  runtime           = var.runtime
 
   publish = true
 
-  depends_on    = [aws_cloudwatch_log_group.lambda]
+  depends_on = [aws_cloudwatch_log_group.lambda]
 }
 
 resource "aws_lambda_permission" "lambda" {
   statement_id  = "AllowAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
-  qualifier = "prod"
+  qualifier     = "prod"
   principal     = "apigateway.amazonaws.com"
 
   # The /*/*/* part allows invocation from any stage, method and resource path
@@ -48,7 +48,7 @@ resource "aws_lambda_permission" "lambda" {
 }
 
 resource "aws_lambda_alias" "lambda" {
-  name = "prod"
-  function_name = aws_lambda_function.lambda.arn
+  name             = "prod"
+  function_name    = aws_lambda_function.lambda.arn
   function_version = "$LATEST"
 }

@@ -1,35 +1,35 @@
 variable "source_file" {
-    type = string
+  type = string
 }
 
 variable "function_name" {
-    type = string
+  type = string
 }
 
 variable "bucket" {
-    type = string
+  type = string
 }
 
 variable "function_version" {
-    type = string
+  type = string
 }
 
 variable "handler" {
-    type = string
+  type = string
 }
 
 variable "layers_arn" {
-    type = list
+  type = list
 }
 
 variable "runtime" {
-    type = string
+  type = string
 }
 
 variable "api_execution_arn" {
-    type = string
+  type = string
 }
 
 variable "retention_in_days" {
-    type = number
+  type = number
 }

@@ -1,35 +1,35 @@
 variable "name" {
-    type = string
+  type = string
 }
 
 variable "swagger" {
-    type = string
+  type = string
 }
 
 variable "domain" {
-    type = string
+  type = string
 }
 
 variable "acm_certificate_arn" {
-    type = string
+  type = string
 }
 
 variable "zone_id" {
-    type = string
+  type = string
 }
 
 variable "green_deploy_count" {
-    type = number
+  type = number
 }
 
 variable "blue_deploy_count" {
-    type = number
+  type = number
 }
 
 variable "current_stage" {
-    type = string
+  type = string
 }
 
 variable "path_version" {
-    type = string
+  type = string
 }

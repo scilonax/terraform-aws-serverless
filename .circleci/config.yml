@@ -14,6 +14,11 @@ curl: &curl
     name: Install curl
     command: apk add --update-cache --upgrade curl
 
+aws_credentials: &aws_credentials
+  run:
+    name: aws credentials
+    command: mkdir -p ~/.aws && echo -e "$credentials" > ~/.aws/credentials
+
 jobs:
   validate:
     <<: *terraform
@@ -31,42 +36,46 @@ jobs:
           command: find . -name ".terraform" -prune -o -type f -name "*.tf" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform validate && echo "√ $m") || exit 1 ; done
       - run:
           name: Check if Terraform configurations are properly formatted
-          command: if [[ -n "$(terraform fmt -write=false)" ]]; then echo "Some terraform files need be formatted, run 'terraform fmt' to fix"; exit 1; fi
+          command: find . -name ".terraform" -prune -o -type f -name "*.tf" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && [[ -z "$(terraform fmt -write=false)" ]] && echo "√ $m" || (echo "✗ $m" && exit 1)) || exit 1 ; done
       - run:
           name: Install tflint
           command: curl -L -o /tmp/tflint.zip https://github.com/wata727/tflint/releases/download/v0.8.2/tflint_linux_amd64.zip && unzip /tmp/tflint.zip -d /usr/local/bin
       - run:
           name: Check Terraform configurations with tflint
-          command: tflint
+          command: find . -name ".terraform" -prune -o -type f -name "*.tf" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && tflint && echo "√ $m") || exit 1 ; done
       - persist_to_workspace:
           root: /tmp/workspace/terraform
           paths: 
-            - "*/.terraform"
-            - "*/*.zip"
+            - "examples/*/.terraform"
+            - "examples/*/*.zip"          
   test_plan:
     <<: *terraform
     environment:
         AWS_DEFAULT_REGION: us-east-1
         TF_IN_AUTOMATION: true
+        AWS_PROFILE: scilonax_sandbox
     steps:
       - checkout
       - *attach_workspace
       - *curl
+      - *aws_credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
       - run:
           name: terraform plan
-          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done
+          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done          
   apply:
     <<: *terraform
     environment:
         AWS_DEFAULT_REGION: us-east-1
         TF_IN_AUTOMATION: true
+        AWS_PROFILE: scilonax_sandbox
     steps:
       - checkout
       - *attach_workspace
       - *curl
+      - *aws_credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
@@ -79,14 +88,6 @@ workflows:
     jobs:
       - validate
       - test_plan:
+          context: sandbox
           requires:
             - validate
-          filters:
-            branches:
-              ignore: master
-      - apply:
-          requires:
-            - validate
-          filters:
-            branches:
-              only: master
