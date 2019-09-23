@@ -91,13 +91,3 @@ workflows:
           context: sandbox
           requires:
             - validate
-          filters:
-            branches:
-              ignore: master
-      - apply:
-          context: sandbox
-          requires:
-            - validate
-          filters:
-            branches:
-              only: master
