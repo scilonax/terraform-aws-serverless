@@ -10,7 +10,7 @@ data "aws_route53_zone" "sandbox" {
 resource "aws_acm_certificate" "cert" {
   domain_name               = "aws-serverless.sandbox.scilonax.com"
   subject_alternative_names = ["*.aws-serverless.sandbox.scilonax.com"]
-  validation_method = "EMAIL"
+  validation_method         = "EMAIL"
 }
 
 resource "aws_acm_certificate_validation" "cert" {
@@ -18,29 +18,29 @@ resource "aws_acm_certificate_validation" "cert" {
 }
 
 module "serverless_api" {
-  source = "../../modules/api"
+  source              = "../../modules/api"
   acm_certificate_arn = aws_acm_certificate.cert.arn
-  blue_deploy_count = 1
-  green_deploy_count = 0
-  current_stage = "blue"
-  domain = "api.aws-serverless.sandbox.scilonax.com"
-  name = "api.aws-serverless.sandbox.scilonax.com"
-  path_version = "v1"
-  swagger = data.template_file.api_swagger.rendered
-  zone_id = data.aws_route53_zone.sandbox.id
+  blue_deploy_count   = 1
+  green_deploy_count  = 0
+  current_stage       = "blue"
+  domain              = "api.aws-serverless.sandbox.scilonax.com"
+  name                = "api.aws-serverless.sandbox.scilonax.com"
+  path_version        = "v1"
+  swagger             = data.template_file.api_swagger.rendered
+  zone_id             = data.aws_route53_zone.sandbox.id
 }
 
 module "serverless_lambda" {
-  source = "../../modules/lambda"
+  source            = "../../modules/lambda"
   api_execution_arn = module.serverless_api.execution_arn
-  bucket = module.serverless.lambda_bucket_id
-  function_name = "post-ride"
-  function_version = "0.0.0"
-  handler = "exports.handler"
-  layers_arn = []
+  bucket            = module.serverless.lambda_bucket_id
+  function_name     = "post-ride"
+  function_version  = "0.0.0"
+  handler           = "exports.handler"
+  layers_arn        = []
   retention_in_days = 1
-  runtime = "nodejs8.10"
-  source_file = "exports.js"
+  runtime           = "nodejs8.10"
+  source_file       = "exports.js"
 }
 
 resource "aws_dynamodb_table" "rides" {
@@ -56,35 +56,35 @@ resource "aws_dynamodb_table" "rides" {
 }
 
 module "serverless" {
-  source                    = "../../"
+  source = "../../"
 
-  aws_profile               = "scilonax_sandbox"
-  website_folder            = "website"
-  domain                    = "aws-serverless.sandbox.scilonax.com"
-  domain_aliases            = ["www.aws-serverless.sandbox.scilonax.com", "www1.aws-serverless.sandbox.scilonax.com"]
-  cdn_origin_id             = "aws_serverless_sandbox_scilonax_com"
-  acm_certificate_arn       = aws_acm_certificate.cert.arn
-  lambda_role_name          = "iam_for_lambda"
-  dynamodb_tables_arn       = [aws_dynamodb_table.rides.arn]
+  aws_profile         = "scilonax_sandbox"
+  website_folder      = "website"
+  domain              = "aws-serverless.sandbox.scilonax.com"
+  domain_aliases      = ["www.aws-serverless.sandbox.scilonax.com", "www1.aws-serverless.sandbox.scilonax.com"]
+  cdn_origin_id       = "aws_serverless_sandbox_scilonax_com"
+  acm_certificate_arn = aws_acm_certificate.cert.arn
+  lambda_role_name    = "iam_for_lambda"
+  dynamodb_tables_arn = [aws_dynamodb_table.rides.arn]
 }
 
 module "serverless_domain1" {
-  source = "../../modules/cloudfront_route53"
-  domain = "aws-serverless.sandbox.scilonax.com"
+  source          = "../../modules/cloudfront_route53"
+  domain          = "aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
   route53_zone_id = data.aws_route53_zone.sandbox.id
 }
 
 module "serverless_domain2" {
-  source = "../../modules/cloudfront_route53"
-  domain = "www.aws-serverless.sandbox.scilonax.com"
+  source          = "../../modules/cloudfront_route53"
+  domain          = "www.aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
   route53_zone_id = data.aws_route53_zone.sandbox.id
 }
 
 module "serverless_domain3" {
-  source = "../../modules/cloudfront_route53"
-  domain = "www1.aws-serverless.sandbox.scilonax.com"
+  source          = "../../modules/cloudfront_route53"
+  domain          = "www1.aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
   route53_zone_id = data.aws_route53_zone.sandbox.id
 }

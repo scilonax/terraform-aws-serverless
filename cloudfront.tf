@@ -30,25 +30,25 @@ EOF
 resource "aws_cloudfront_distribution" "website_cdn" {
   origin {
     domain_name = "${var.domain}.s3-website-${data.aws_region.current.name}.amazonaws.com"
-    origin_id = var.cdn_origin_id
+    origin_id   = var.cdn_origin_id
 
     custom_origin_config {
-      http_port = 80
-      https_port = 443
-      origin_ssl_protocols = ["TLSv1"]
+      http_port              = 80
+      https_port             = 443
+      origin_ssl_protocols   = ["TLSv1"]
       origin_protocol_policy = "http-only"
     }
   }
 
-  enabled = true
-  is_ipv6_enabled = true
+  enabled             = true
+  is_ipv6_enabled     = true
   default_root_object = "index.html"
 
   aliases = concat([var.domain], var.domain_aliases)
 
   default_cache_behavior {
-    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods = ["GET", "HEAD"]
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
     target_origin_id = var.cdn_origin_id
 
     forwarded_values {
@@ -60,9 +60,9 @@ resource "aws_cloudfront_distribution" "website_cdn" {
     }
 
     viewer_protocol_policy = "redirect-to-https"
-    min_ttl = 0
-    default_ttl = 3600
-    max_ttl = 86400
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
   }
 
   price_class = "PriceClass_100"
@@ -74,15 +74,15 @@ resource "aws_cloudfront_distribution" "website_cdn" {
   }
 
   custom_error_response {
-    error_code = "404"
+    error_code            = "404"
     error_caching_min_ttl = "5"
-    response_code = "404"
-    response_page_path = "/404.html"
+    response_code         = "404"
+    response_page_path    = "/404.html"
   }
 
   viewer_certificate {
-    ssl_support_method = "sni-only"
-    acm_certificate_arn = var.acm_certificate_arn
+    ssl_support_method       = "sni-only"
+    acm_certificate_arn      = var.acm_certificate_arn
     minimum_protocol_version = "TLSv1"
   }
 }
