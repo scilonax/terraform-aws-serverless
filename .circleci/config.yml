@@ -14,6 +14,11 @@ curl: &curl
     name: Install curl
     command: apk add --update-cache --upgrade curl
 
+aws_credentials: &aws_credentials
+  run:
+    name: aws credentials
+    command: mkdir -p ~/.aws && echo -e "$credentials" > ~/.aws/credentials
+
 jobs:
   validate:
     <<: *terraform
@@ -53,9 +58,7 @@ jobs:
       - checkout
       - *attach_workspace
       - *curl
-      - run:
-          name: aws credentials
-          command: mkdir -p ~/.aws && echo $credentials > ~/.aws/credentials
+      - *aws_credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
@@ -72,9 +75,7 @@ jobs:
       - checkout
       - *attach_workspace
       - *curl
-      - run:
-          name: aws credentials
-          command: mkdir -p ~/.aws && echo -e "$credentials" > ~/.aws/credentials
+      - *aws_credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
