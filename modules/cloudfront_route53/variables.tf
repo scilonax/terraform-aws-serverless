@@ -1,11 +1,11 @@
 variable "domain" {
-    type = string
+  type = string
 }
 
 variable "route53_zone_id" {
-    type = string
+  type = string
 }
 
 variable "cdn_domain_name" {
-    type = string
+  type = string
 }
