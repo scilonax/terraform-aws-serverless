@@ -38,11 +38,6 @@ jobs:
       - run:
           name: Check Terraform configurations with tflint
           command: tflint
-      - persist_to_workspace:
-          root: /tmp/workspace/terraform
-          paths: 
-            - "*/.terraform"
-            - "*/*.zip"
   test_plan:
     <<: *terraform
     environment:
