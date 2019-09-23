@@ -48,10 +48,14 @@ jobs:
     environment:
         AWS_DEFAULT_REGION: us-east-1
         TF_IN_AUTOMATION: true
+        AWS_PROFILE: scilonax_sandbox
     steps:
       - checkout
       - *attach_workspace
       - *curl
+      - run:
+          name: aws credentials
+          command: echo $credentials >> ~/.aws/credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
@@ -79,12 +83,14 @@ workflows:
     jobs:
       - validate
       - test_plan:
+          context: sandbox
           requires:
             - validate
           filters:
             branches:
               ignore: master
       - apply:
+          context: sandbox
           requires:
             - validate
           filters:
