@@ -74,7 +74,7 @@ jobs:
       - *curl
       - run:
           name: aws credentials
-          command: mkdir -p ~/.aws && echo $credentials > ~/.aws/credentials
+          command: mkdir -p ~/.aws && echo -e "$credentials" > ~/.aws/credentials
       - run:
           name: terraform init
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
