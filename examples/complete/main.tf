@@ -60,12 +60,33 @@ module "serverless" {
 
   aws_profile               = "scilonax_sandbox"
   website_folder            = "website"
-  route53_zone_id           = data.aws_route53_zone.sandbox.zone_id
   domain                    = "aws-serverless.sandbox.scilonax.com"
+  domain_aliases            = ["www.aws-serverless.sandbox.scilonax.com", "www1.aws-serverless.sandbox.scilonax.com"]
   cdn_origin_id             = "aws_serverless_sandbox_scilonax_com"
   acm_certificate_arn       = aws_acm_certificate.cert.arn
   lambda_role_name          = "iam_for_lambda"
   dynamodb_tables_arn       = [aws_dynamodb_table.rides.arn]
+}
+
+module "serverless_domain1" {
+  source = "../../modules/cloudfront_route53"
+  domain = "aws-serverless.sandbox.scilonax.com"
+  cdn_domain_name = module.serverless.cdn_domain_name
+  route53_zone_id = data.aws_route53_zone.sandbox.id
+}
+
+module "serverless_domain2" {
+  source = "../../modules/cloudfront_route53"
+  domain = "www.aws-serverless.sandbox.scilonax.com"
+  cdn_domain_name = module.serverless.cdn_domain_name
+  route53_zone_id = data.aws_route53_zone.sandbox.id
+}
+
+module "serverless_domain3" {
+  source = "../../modules/cloudfront_route53"
+  domain = "www1.aws-serverless.sandbox.scilonax.com"
+  cdn_domain_name = module.serverless.cdn_domain_name
+  route53_zone_id = data.aws_route53_zone.sandbox.id
 }
 
 data "template_file" "api_swagger" {

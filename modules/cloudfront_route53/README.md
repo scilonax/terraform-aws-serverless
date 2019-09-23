@@ -1,8 +1,8 @@
-# AWS Serverless Terraform module
+# AWS Serverless Terraform module - Cloudfront Route53
 
 ## Features
 
-Creates a serverless stack on AWS.
+Creates cloudfront route53 aliases
 
 ## Usage
 
