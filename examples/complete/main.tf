@@ -20,8 +20,8 @@ resource "aws_acm_certificate_validation" "cert" {
 module "serverless_api" {
   source              = "../../modules/api"
   acm_certificate_arn = aws_acm_certificate.cert.arn
-  blue_deploy_count   = 1
-  green_deploy_count  = 0
+  blue_deploy_count   = 2
+  green_deploy_count  = 1
   current_stage       = "blue"
   domain              = "api.aws-serverless.sandbox.scilonax.com"
   name                = "api.aws-serverless.sandbox.scilonax.com"

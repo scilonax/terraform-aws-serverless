@@ -51,3 +51,27 @@ resource "aws_api_gateway_base_path_mapping" "versions" {
     aws_api_gateway_deployment.green_versions,
   ]
 }
+
+resource "aws_api_gateway_usage_plan" "usageplan" {
+  name = var.name
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.api.id
+    stage  = aws_api_gateway_deployment.blue_versions.stage_name
+  }
+
+  api_stages {
+    api_id = aws_api_gateway_rest_api.api.id
+    stage  = aws_api_gateway_deployment.green_versions.stage_name
+  }
+}
+
+resource "aws_api_gateway_api_key" "key" {
+  name = var.name
+}
+
+resource "aws_api_gateway_usage_plan_key" "main" {
+  key_id        = aws_api_gateway_api_key.key.id
+  key_type      = "API_KEY"
+  usage_plan_id = aws_api_gateway_usage_plan.usageplan.id
+}
