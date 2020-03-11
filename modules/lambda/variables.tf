@@ -19,7 +19,7 @@ variable "handler" {
 }
 
 variable "layers_arn" {
-  type = list
+  type    = list
   default = []
 }
 
@@ -28,7 +28,7 @@ variable "runtime" {
 }
 
 variable "api_execution_arn" {
-  type = string
+  type    = string
   default = ""
 }
 
