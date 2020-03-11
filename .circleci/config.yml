@@ -61,10 +61,10 @@ jobs:
       - *aws_credentials
       - run:
           name: terraform init
-          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
+          command: find examples -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
       - run:
           name: terraform plan
-          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done
+          command: find examples -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done
   apply:
     <<: *terraform
     environment:
