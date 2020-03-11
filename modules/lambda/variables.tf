@@ -37,6 +37,6 @@ variable "retention_in_days" {
 }
 
 variable "env_variables" {
-  type = map
+  type    = map
   default = {}
 }
