@@ -19,3 +19,7 @@ Module managed by [Rodrigo Silva](https://github.com/rbsilva).
 ## License
 
 Apache 2 Licensed. See LICENSE for full details.
+
+# TODO
+- Improve blue/green
+- 

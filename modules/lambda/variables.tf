@@ -1,4 +1,4 @@
-variable "source_file" {
+variable "source_dir" {
   type = string
 }
 
@@ -20,6 +20,7 @@ variable "handler" {
 
 variable "layers_arn" {
   type = list
+  default = []
 }
 
 variable "runtime" {
@@ -28,6 +29,7 @@ variable "runtime" {
 
 variable "api_execution_arn" {
   type = string
+  default = ""
 }
 
 variable "retention_in_days" {

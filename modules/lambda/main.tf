@@ -1,6 +1,6 @@
 data "archive_file" "lambda" {
   type        = "zip"
-  source_file = var.source_file
+  source_dir = var.source_dir
   output_path = "${path.module}/${var.function_name}.zip"
 }
 
@@ -36,6 +36,7 @@ resource "aws_lambda_function" "lambda" {
 }
 
 resource "aws_lambda_permission" "lambda" {
+  count = var.api_execution_arn != "" ? 1 : 0
   statement_id  = "AllowAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name

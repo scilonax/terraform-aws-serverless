@@ -25,6 +25,7 @@ variable "aws_profile" {
 
 variable "dynamodb_tables_arn" {
   type = list
+  default = []
 }
 
 variable "lambda_role_name" {

@@ -14,7 +14,7 @@ resource "aws_acm_certificate" "cert" {
 }
 
 resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn = "${aws_acm_certificate.cert.arn}"
+  certificate_arn = aws_acm_certificate.cert.arn
 }
 
 module "serverless_api" {
@@ -37,10 +37,9 @@ module "serverless_lambda" {
   function_name     = "post-ride"
   function_version  = "0.0.0"
   handler           = "exports.handler"
-  layers_arn        = []
   retention_in_days = 1
   runtime           = "nodejs8.10"
-  source_file       = "exports.js"
+  source_dir        = "exports"
 }
 
 resource "aws_dynamodb_table" "rides" {
