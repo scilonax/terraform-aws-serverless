@@ -36,7 +36,6 @@ resource "aws_lambda_function" "lambda" {
 }
 
 resource "aws_lambda_permission" "lambda" {
-  count         = var.api_execution_arn != "" ? 1 : 0
   statement_id  = "AllowAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
