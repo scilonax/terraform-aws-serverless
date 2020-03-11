@@ -2,7 +2,7 @@ version: 2
 
 terraform: &terraform
   docker:
-    - image: hashicorp/terraform:0.12.8
+    - image: hashicorp/terraform:0.12.18
   working_directory: /tmp/workspace/terraform
 
 attach_workspace: &attach_workspace
@@ -45,9 +45,9 @@ jobs:
           command: find . -name ".terraform" -prune -o -type f -name "*.tf" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && tflint && echo "√ $m") || exit 1 ; done
       - persist_to_workspace:
           root: /tmp/workspace/terraform
-          paths: 
+          paths:
             - "examples/*/.terraform"
-            - "examples/*/*.zip"          
+            - "examples/*/*.zip"
   test_plan:
     <<: *terraform
     environment:
@@ -64,7 +64,7 @@ jobs:
           command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform init -input=false) || exit 1; done
       - run:
           name: terraform plan
-          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done          
+          command: find . -type d -name ".terraform" -exec dirname {} \;|sort -u | while read m; do (cd "$m" && terraform plan -input=false) || exit 1; done
   apply:
     <<: *terraform
     environment:
