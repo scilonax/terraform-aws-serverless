@@ -24,7 +24,7 @@ variable "aws_profile" {
 }
 
 variable "dynamodb_tables_arn" {
-  type = list
+  type    = list
   default = []
 }
 

@@ -10,7 +10,7 @@ data "aws_iam_role" "lambda" {
 }
 
 data "aws_iam_policy_document" "dynamodb_lambda_policy" {
-  count  = length(var.dynamodb_tables_arn) == 0 ? 0 : 1
+  count = length(var.dynamodb_tables_arn) == 0 ? 0 : 1
   statement {
     actions = [
       "dynamodb:*",
