@@ -35,3 +35,8 @@ variable "api_execution_arn" {
 variable "retention_in_days" {
   type = number
 }
+
+variable "env_variables" {
+  type = map
+  default = {}
+}

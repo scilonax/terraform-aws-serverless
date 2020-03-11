@@ -29,7 +29,9 @@ resource "aws_lambda_function" "lambda" {
   s3_object_version = aws_s3_bucket_object.lambda.version_id
   layers            = var.layers_arn
   runtime           = var.runtime
-
+  environment {
+    variables = var.env_variables
+  }
   publish = true
 
   depends_on = [aws_cloudwatch_log_group.lambda]
