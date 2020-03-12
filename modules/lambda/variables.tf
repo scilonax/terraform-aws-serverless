@@ -36,9 +36,14 @@ variable "retention_in_days" {
   type = number
 }
 
+variable "timeout" {
+  type    = number
+  default = 3
+}
+
 variable "env_variables" {
-  type    = map
+  type = map
   default = {
-    NOOP: "noop"
+    NOOP : "noop"
   }
 }

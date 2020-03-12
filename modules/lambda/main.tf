@@ -32,8 +32,8 @@ resource "aws_lambda_function" "lambda" {
   environment {
     variables = var.env_variables
   }
-  publish = true
-
+  publish    = true
+  timeout    = var.timeout
   depends_on = [aws_cloudwatch_log_group.lambda]
 }
 
