@@ -1,3 +1,5 @@
+![Terraform](https://github.com/scilonax/terraform-aws-serverless/workflows/Terraform/badge.svg)
+
 # AWS Serverless Terraform module
 
 ## Features
