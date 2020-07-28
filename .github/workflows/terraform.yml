@@ -1,0 +1,63 @@
+name: 'Terraform'
+
+on: [push]
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      TF_IN_AUTOMATION: true
+      AWS_PROFILE: scilonax_sandbox
+
+    # Checkout the repository to the GitHub Actions runner
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1
+
+    - name: Install aws
+      run: mkdir -p ~/.aws && echo -e "${{ secrets.AWS_CREDENTIALS }}" > ~/.aws/credentials
+
+    - name: Terraform Init
+      run: make init
+
+    - name: Validate Terraform configurations
+      run: make validate
+
+    - name: Check if Terraform configurations are properly formatted
+      run: make fmt
+        
+    - name: Install tflint
+      run: |
+        curl -L -o /tmp/tflint.zip https://github.com/wata727/tflint/releases/download/v0.18.0/tflint_linux_amd64.zip && 
+        mkdir -p ~/bin &&
+        unzip /tmp/tflint.zip -d ~/bin &&
+        echo "::add-path::~/bin"
+
+    - name: Check Terraform configurations with tflint
+      run: make lint
+
+    - name: Clean up modules .terraform folder
+      run: rm -rf modules/**/.terraform
+
+    - name: Terraform Init with backends
+      run: make init-backend
+
+    - name: Terraform Plan
+      run: make plan
+
+      # On push to master, build or change infrastructure according to Terraform configuration files
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      run: make apply

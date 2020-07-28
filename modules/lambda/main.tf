@@ -47,6 +47,7 @@ resource "aws_lambda_permission" "lambda" {
 
   # The /*/*/* part allows invocation from any stage, method and resource path
   # within API Gateway REST API.
+  # tflint-ignore: aws_lambda_permission_invalid_source_arn
   source_arn = "${var.api_execution_arn}/*/*/*"
 }
 
