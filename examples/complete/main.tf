@@ -9,6 +9,15 @@ provider "aws" {
   alias   = "root"
 }
 
+terraform {
+  backend "s3" {
+    region  = "us-east-1"
+    bucket  = "scilonax-aws-tfstate"
+    key     = "terraform-aws-serverless/examples/complete/terraform.tfstate"
+    profile = "scilonax"
+  }
+}
+
 data "aws_route53_zone" "scilonax" {
   name     = "scilonax.com"
   provider = aws.root
