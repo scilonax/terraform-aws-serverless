@@ -3,8 +3,15 @@ provider "aws" {
   profile = "scilonax_sandbox"
 }
 
-data "aws_route53_zone" "sandbox" {
-  name = "sandbox.scilonax.com"
+provider "aws" {
+  region  = "us-east-1"
+  profile = "scilonax"
+  alias   = "root"
+}
+
+data "aws_route53_zone" "scilonax" {
+  name     = "scilonax.com"
+  provider = aws.root
 }
 
 resource "aws_acm_certificate" "cert" {
@@ -27,7 +34,17 @@ module "serverless_api" {
   name                = "api.aws-serverless.sandbox.scilonax.com"
   path_version        = "v1"
   swagger             = data.template_file.api_swagger.rendered
-  zone_id             = data.aws_route53_zone.sandbox.id
+}
+
+module "serverless_api_domain" {
+  providers = {
+    aws = aws.root
+  }
+  source               = "../../modules/api_route53"
+  zone_id              = data.aws_route53_zone.scilonax.id
+  domain_name          = module.serverless_api.domain_name
+  regional_domain_name = module.serverless_api.regional_domain_name
+  regional_zone_id     = module.serverless_api.regional_zone_id
 }
 
 module "serverless_lambda" {
@@ -38,7 +55,7 @@ module "serverless_lambda" {
   function_version  = "0.0.0"
   handler           = "exports.handler"
   retention_in_days = 1
-  runtime           = "nodejs8.10"
+  runtime           = "nodejs12.x"
   source_dir        = "exports"
 }
 
@@ -67,24 +84,33 @@ module "serverless" {
 }
 
 module "serverless_domain1" {
+  providers = {
+    aws = aws.root
+  }
   source          = "../../modules/cloudfront_route53"
   domain          = "aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
-  route53_zone_id = data.aws_route53_zone.sandbox.id
+  route53_zone_id = data.aws_route53_zone.scilonax.id
 }
 
 module "serverless_domain2" {
+  providers = {
+    aws = aws.root
+  }
   source          = "../../modules/cloudfront_route53"
   domain          = "www.aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
-  route53_zone_id = data.aws_route53_zone.sandbox.id
+  route53_zone_id = data.aws_route53_zone.scilonax.id
 }
 
 module "serverless_domain3" {
+  providers = {
+    aws = aws.root
+  }
   source          = "../../modules/cloudfront_route53"
   domain          = "www1.aws-serverless.sandbox.scilonax.com"
   cdn_domain_name = module.serverless.cdn_domain_name
-  route53_zone_id = data.aws_route53_zone.sandbox.id
+  route53_zone_id = data.aws_route53_zone.scilonax.id
 }
 
 data "template_file" "api_swagger" {

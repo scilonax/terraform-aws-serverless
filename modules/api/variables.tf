@@ -14,10 +14,6 @@ variable "acm_certificate_arn" {
   type = string
 }
 
-variable "zone_id" {
-  type = string
-}
-
 variable "green_deploy_count" {
   type = number
 }
