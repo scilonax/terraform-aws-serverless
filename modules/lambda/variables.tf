@@ -29,7 +29,7 @@ variable "runtime" {
 
 variable "api_execution_arn" {
   type    = string
-  default = "none"
+  default = ""
 }
 
 variable "retention_in_days" {

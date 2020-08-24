@@ -16,13 +16,38 @@ resource "aws_cloudwatch_log_group" "lambda" {
   retention_in_days = var.retention_in_days
 }
 
-data "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
+resource "aws_iam_role" "lambda" {
+  name = var.function_name
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+data "aws_iam_policy" "lambda_basic" {
+  arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_lambda_basic" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = data.aws_iam_policy.lambda_basic.arn
 }
 
 resource "aws_lambda_function" "lambda" {
   function_name     = var.function_name
-  role              = data.aws_iam_role.iam_for_lambda.arn
+  role              = aws_iam_role.lambda.arn
   handler           = var.handler
   s3_bucket         = var.bucket
   s3_key            = aws_s3_bucket_object.lambda.key
@@ -39,6 +64,7 @@ resource "aws_lambda_function" "lambda" {
 }
 
 resource "aws_lambda_permission" "lambda" {
+  count         = var.api_execution_arn == "" ? 0 : 1
   statement_id  = "AllowAPIInvoke"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambda.function_name
