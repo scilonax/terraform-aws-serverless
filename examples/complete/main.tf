@@ -18,6 +18,10 @@ terraform {
   }
 }
 
+locals {
+  domain = "aws-serverless.sandbox.scilonax.com"
+}
+
 data "aws_route53_zone" "scilonax" {
   name     = "scilonax.com"
   provider = aws.root
@@ -56,10 +60,37 @@ module "serverless_api_domain" {
   regional_zone_id     = module.serverless_api.regional_zone_id
 }
 
+resource "aws_s3_bucket" "lambdas" {
+  bucket = "${local.domain}-lambdas"
+  versioning {
+    enabled = true
+  }
+}
+
+data "aws_iam_role" "lambda" {
+  name = "iam_for_lambda"
+}
+
+data "aws_iam_policy_document" "dynamodb_lambda_policy" {
+  statement {
+    actions = [
+      "dynamodb:*",
+    ]
+
+    resources = [aws_dynamodb_table.rides.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda" {
+  name   = local.domain
+  role   = data.aws_iam_role.lambda.id
+  policy = data.aws_iam_policy_document.dynamodb_lambda_policy.json
+}
+
 module "serverless_lambda" {
   source            = "../../modules/lambda"
   api_execution_arn = module.serverless_api.execution_arn
-  bucket            = module.serverless.lambda_bucket_id
+  bucket            = aws_s3_bucket.lambdas.id
   function_name     = "post-ride"
   function_version  = "0.0.0"
   handler           = "exports.handler"
@@ -84,12 +115,10 @@ module "serverless" {
 
   aws_profile         = "scilonax_sandbox"
   website_folder      = "website"
-  domain              = "aws-serverless.sandbox.scilonax.com"
+  domain              = local.domain
   domain_aliases      = ["www.aws-serverless.sandbox.scilonax.com", "www1.aws-serverless.sandbox.scilonax.com"]
   cdn_origin_id       = "aws_serverless_sandbox_scilonax_com"
   acm_certificate_arn = aws_acm_certificate.cert.arn
-  lambda_role_name    = "iam_for_lambda"
-  dynamodb_tables_arn = [aws_dynamodb_table.rides.arn]
 }
 
 module "serverless_domain1" {
@@ -126,17 +155,26 @@ data "template_file" "api_swagger" {
   template = file("swagger.yaml")
 
   vars = {
-    user_pool_arn        = module.serverless.cognito_user_pool_arn
+    user_pool_arn        = aws_cognito_user_pool.website_auth.arn
     post_ride_invoke_arn = module.serverless_lambda.invoke_arn
   }
+}
+
+resource "aws_cognito_user_pool" "website_auth" {
+  name = local.domain
+}
+
+resource "aws_cognito_user_pool_client" "website_auth_client" {
+  name         = local.domain
+  user_pool_id = aws_cognito_user_pool.website_auth.id
 }
 
 data "template_file" "config_js" {
   template = file("config.js")
 
   vars = {
-    cognito_user_pool_id        = module.serverless.cognito_user_pool_id
-    cognito_user_pool_client_id = module.serverless.cognito_user_pool_client_id
+    cognito_user_pool_id        = aws_cognito_user_pool.website_auth.id
+    cognito_user_pool_client_id = aws_cognito_user_pool_client.website_auth_client.id
   }
 }
 

@@ -22,12 +22,3 @@ variable "website_folder" {
 variable "aws_profile" {
   type = string
 }
-
-variable "dynamodb_tables_arn" {
-  type    = list
-  default = []
-}
-
-variable "lambda_role_name" {
-  type = string
-}
