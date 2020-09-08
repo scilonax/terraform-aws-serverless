@@ -30,7 +30,9 @@ paths:
               schema:
                 type: "string"
       security:
-        - cognito-authorizer: []              
+        - cognito-authorizer: []            
+      x-scilonax-lambda:
+        name: post-ride  
       x-amazon-apigateway-integration:
         uri: ${post_ride_invoke_arn}
         passthroughBehavior: "when_no_match"

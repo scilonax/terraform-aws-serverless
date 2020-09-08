@@ -20,6 +20,8 @@ terraform {
 
 locals {
   domain = "aws-serverless.sandbox.scilonax.com"
+  lambdas = flatten([for path in yamldecode(file("swagger.yaml"))["paths"]: 
+    [for method in path: method.x-scilonax-lambda if lookup(method, "x-scilonax-lambda", false) != false] ])
 }
 
 data "aws_route53_zone" "scilonax" {
@@ -67,10 +69,6 @@ resource "aws_s3_bucket" "lambdas" {
   }
 }
 
-data "aws_iam_role" "lambda" {
-  name = "iam_for_lambda"
-}
-
 data "aws_iam_policy_document" "dynamodb_lambda_policy" {
   statement {
     actions = [
@@ -83,11 +81,13 @@ data "aws_iam_policy_document" "dynamodb_lambda_policy" {
 
 resource "aws_iam_role_policy" "lambda" {
   name   = local.domain
-  role   = data.aws_iam_role.lambda.id
+  role   = module.serverless_lambda["post-ride"].role_name
   policy = data.aws_iam_policy_document.dynamodb_lambda_policy.json
 }
 
 module "serverless_lambda" {
+  for_each = zipmap([for lambda in local.lambdas: lambda.name], 
+    [for lambda in local.lambdas: lambda])
   source            = "../../modules/lambda"
   api_execution_arn = module.serverless_api.execution_arn
   bucket            = aws_s3_bucket.lambdas.id
@@ -156,7 +156,7 @@ data "template_file" "api_swagger" {
 
   vars = {
     user_pool_arn        = aws_cognito_user_pool.website_auth.arn
-    post_ride_invoke_arn = module.serverless_lambda.invoke_arn
+    post_ride_invoke_arn = module.serverless_lambda["post-ride"].invoke_arn
   }
 }
 
